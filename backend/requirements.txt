@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+groq
+chromadb
+sentence-transformers
+pymupdf
+transformers
+torch
+easyocr
+opencv-python
+Pillow
+numpy
+pytest
+httpx
