@@ -16,7 +16,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>📚 Exam Revision Assistant</h1>
+        <h1>Exam Revision Assistant</h1>
         <p>Upload your notes, get a study plan, flashcards, quizzes, and more!</p>
       </header>
 

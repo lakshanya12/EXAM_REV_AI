@@ -1,5 +1,3 @@
-// QAChat.jsx — Chat interface for asking questions (RAG + fallback)
-
 import { useState } from "react";
 import { askQuestion } from "../api";
 

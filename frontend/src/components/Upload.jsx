@@ -95,13 +95,13 @@ export default function Upload() {
     if (daysLeft <= 3) return "🔴 Very little time! Prioritize hardest topics NOW.";
     if (daysLeft <= 7) return "🟡 One week left — follow the plan strictly.";
     if (daysLeft <= 14) return "🟢 Good time — steady and consistent study wins.";
-    return "✅ Plenty of time — build a strong foundation first.";
+    return "Plenty of time — build a strong foundation first.";
   }
 
   // ── Render markdown-like plan with basic formatting ──
   function renderPlan(text) {
     return text.split("\n").map((line, i) => {
-      // Section headers like ## 📅 ...
+      // Section headers like ##  ...
       if (line.startsWith("## ")) {
         return (
           <h3 key={i} style={{ color: "#3b4cca", marginTop: "20px", marginBottom: "8px", fontSize: "17px" }}>
@@ -256,7 +256,7 @@ export default function Upload() {
           {daysLeft !== null && daysLeft > 0 && (
             <div style={{ marginTop: "24px" }}>
               <label style={{ fontWeight: "700", fontSize: "15px", display: "block", marginBottom: "12px" }}>
-                📚 What should the revision plan cover?
+                What should the revision plan cover?
               </label>
 
               {/* Mode toggle buttons */}

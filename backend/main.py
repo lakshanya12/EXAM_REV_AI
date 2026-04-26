@@ -1,4 +1,4 @@
-# main.py — FastAPI entry point with detailed error logging
+#FastAPI entry point with detailed error logging
 
 import os
 import shutil
@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Exam Revision Assistant")
 
-# Allow all origins so localhost:5175 can talk to this backend
+
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware, 
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,10 +22,11 @@ UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-# ------------------------------------------------------------------
+
 # Lazy imports — we import agents only when needed so startup errors
 # don't crash the whole server before we can see what went wrong
-# ------------------------------------------------------------------
+
+
 def get_ocr():
     from ocr.ocr_router import extract_text_from_file
     return extract_text_from_file
@@ -51,33 +52,30 @@ def get_qa_agent():
     return answer_question
 
 
-# ------------------------------------------------------------------
-# Health check — visit http://localhost:8000/ to confirm it's running
-# ------------------------------------------------------------------
+# Health check — visit http://localhost:8000/ 
+
 @app.get("/")
 def health_check():
-    return {"status": "Backend is running ✅"}
+    return {"status": "Backend is running "}
 
-
-# ------------------------------------------------------------------
 # POST /upload — accepts file, runs OCR, stores in ChromaDB
-# ------------------------------------------------------------------
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        print(f"\n📥 Received file: {file.filename}")
+        print(f"\n Received file: {file.filename}")
 
         # Save file to disk
         file_path = os.path.join(UPLOAD_DIR, file.filename)
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        print(f"✅ File saved to: {file_path}")
+        print(f" File saved to: {file_path}")
 
         # Run OCR
-        print("🔍 Running OCR...")
+        print(" Running OCR...")
         extract_text_from_file = get_ocr()
         extracted_text = extract_text_from_file(file_path)
-        print(f"✅ Extracted {len(extracted_text)} characters")
+        print(f" Extracted {len(extracted_text)} characters")
 
         if not extracted_text or len(extracted_text.strip()) < 10:
             return JSONResponse(
@@ -86,10 +84,10 @@ async def upload_file(file: UploadFile = File(...)):
             )
 
         # Embed into ChromaDB
-        print("💾 Embedding into ChromaDB...")
+        print(" Embedding into ChromaDB...")
         embed_and_store = get_embedder()
         embed_and_store(extracted_text, source=file.filename)
-        print("✅ Stored in ChromaDB")
+        print(" Stored in ChromaDB")
 
         return {
             "message": "File processed successfully",
@@ -99,14 +97,14 @@ async def upload_file(file: UploadFile = File(...)):
 
     except Exception as e:
         # Print full traceback in backend terminal so you can see the real error
-        print("\n❌ UPLOAD ERROR:")
+        print("\n UPLOAD ERROR:")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ------------------------------------------------------------------
+
 # POST /revision-plan
-# ------------------------------------------------------------------
+
 @app.post("/revision-plan")
 async def revision_plan(
     topic: str = Form(...),
@@ -114,7 +112,7 @@ async def revision_plan(
     use_full_notes: str = Form("true")   # comes as string from FormData
 ):
     try:
-        print(f"\n📅 Revision plan — topic: '{topic}', days: {days_until_exam}, full_notes: {use_full_notes}")
+        print(f"\n Revision plan — topic: '{topic}', days: {days_until_exam}, full_notes: {use_full_notes}")
         create_revision_plan = get_revision_agent()
 
         # Convert string "true"/"false" to boolean
@@ -135,7 +133,7 @@ async def flashcards(
     confirmed_external: str = Form("false")   # user confirmed they want external
 ):
     try:
-        print(f"\n🃏 Flashcards — topic: '{topic}', full_notes: {use_full_notes}, confirmed_external: {confirmed_external}")
+        print(f"\n Flashcards — topic: '{topic}', full_notes: {use_full_notes}, confirmed_external: {confirmed_external}")
         generate_flashcards = get_flashcard_agent()
         result = generate_flashcards(
             topic,
@@ -155,7 +153,7 @@ async def quiz(
     confirmed_external: str = Form("false")
 ):
     try:
-        print(f"\n🧠 Quiz — topic: '{topic}', full_notes: {use_full_notes}, confirmed_external: {confirmed_external}")
+        print(f"\n Quiz — topic: '{topic}', full_notes: {use_full_notes}, confirmed_external: {confirmed_external}")
         generate_quiz = get_quiz_agent()
         result = generate_quiz(
             topic,
@@ -168,13 +166,12 @@ async def quiz(
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ------------------------------------------------------------------
 # POST /ask
-# ------------------------------------------------------------------
+
 @app.post("/ask")
 async def ask(question: str = Form(...)):
     try:
-        print(f"\n💬 Question: {question}")
+        print(f"\n Question: {question}")
         answer_question = get_qa_agent()
         answer = answer_question(question)
         return {"answer": answer}
@@ -183,9 +180,9 @@ async def ask(question: str = Form(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ------------------------------------------------------------------
+
 # GET /notes-text — returns all stored notes text
-# ------------------------------------------------------------------
+
 @app.get("/notes-text")
 async def get_notes_text():
     try:
@@ -199,21 +196,21 @@ async def get_notes_text():
 # Add this import at top if not already there
 from rag.retriever import get_notes_count, clear_all_notes
 
-# ── Update the /upload endpoint — clear old notes before storing new ones ──
+#clear old notes before storing new ones
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        print(f"\n📥 Received file: {file.filename}")
+        print(f"\n Received file: {file.filename}")
 
         file_path = os.path.join(UPLOAD_DIR, file.filename)
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        print(f"✅ File saved to: {file_path}")
+        print(f" File saved to: {file_path}")
 
         print("🔍 Running OCR...")
         extract_text_from_file = get_ocr()
         extracted_text = extract_text_from_file(file_path)
-        print(f"✅ Extracted {len(extracted_text)} characters")
+        print(f" Extracted {len(extracted_text)} characters")
 
         if not extracted_text or len(extracted_text.strip()) < 10:
             return JSONResponse(
@@ -222,16 +219,16 @@ async def upload_file(file: UploadFile = File(...)):
             )
 
         # Clear old notes so new upload doesn't mix with previous file
-        print("🗑️ Clearing previous notes from ChromaDB...")
+        print(" Clearing previous notes from ChromaDB...")
         clear_all_notes()
 
-        print("💾 Embedding into ChromaDB...")
+        print(" Embedding into ChromaDB...")
         embed_and_store = get_embedder()
         embed_and_store(extracted_text, source=file.filename)
 
         # Confirm how many chunks were stored
         count = get_notes_count()
-        print(f"✅ Stored {count} chunks in ChromaDB")
+        print(f" Stored {count} chunks in ChromaDB")
 
         return {
             "message": "File processed successfully",
@@ -241,12 +238,12 @@ async def upload_file(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        print("\n❌ UPLOAD ERROR:")
+        print("\n UPLOAD ERROR:")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ── Add this new endpoint to check notes status ──
+# Add this new endpoint to check notes status 
 @app.get("/notes-status")
 async def notes_status():
     """

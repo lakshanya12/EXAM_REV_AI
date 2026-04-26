@@ -12,7 +12,7 @@ def preprocess_image(image_path: str) -> np.ndarray:
     # Load the image
     img = cv2.imread(image_path)
 
-    # Convert to grayscale (OCR works better on single channel)
+    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Remove noise using Gaussian blur

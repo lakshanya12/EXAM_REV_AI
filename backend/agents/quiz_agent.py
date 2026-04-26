@@ -1,17 +1,22 @@
-# quiz_agent.py
-# Same flow as flashcard_agent but generates MCQ questions instead
-
 import os
 import json
 from groq import Groq
 from dotenv import load_dotenv
-from rag.retriever import get_all_notes_text, retrieve_relevant_chunks, get_notes_count
+
+from rag.retriever import (
+    get_all_notes_text,
+    retrieve_relevant_chunks,
+    get_notes_count
+)
+
+# Load ENV
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# Trim (used only for ALL notes mode)
 
 def trim_text(text: str, max_chars: int = 3500) -> str:
     if len(text) <= max_chars:
@@ -19,6 +24,7 @@ def trim_text(text: str, max_chars: int = 3500) -> str:
     half = max_chars // 2
     return text[:half] + "\n\n...[trimmed]...\n\n" + text[-half:]
 
+# Call Groq
 
 def call_groq(prompt: str) -> str:
     response = client.chat.completions.create(
@@ -29,6 +35,7 @@ def call_groq(prompt: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
+# Parse JSON safely
 
 def parse_json(raw: str) -> list:
     try:
@@ -39,44 +46,35 @@ def parse_json(raw: str) -> list:
                 raw = raw[4:]
         return json.loads(raw.strip())
     except json.JSONDecodeError as e:
-        print(f"❌ JSON parse error: {e}")
+        print(f"JSON parse error: {e}")
         print(f"Raw output: {raw[:300]}")
         return []
 
 
+
+# Quiz from notes
+
 def generate_quiz_from_notes(notes_text: str, topic_label: str) -> list:
-    """Generates MCQ questions strictly from the notes content."""
     prompt = f"""You are a quiz generator for exam preparation.
 
 Generate 5 multiple-choice questions based STRICTLY on the notes below.
-Do NOT add any information from outside the notes.
-Every question and answer must come directly from the content below.
+Do NOT use any external knowledge.
 
 Notes:
 ---
 {notes_text}
 ---
 
-Return ONLY a valid JSON array. No explanation, no markdown fences.
-Each object must have:
-  "topic"       : the specific subtopic this question is from (from the notes)
-  "question"    : the question text
-  "options"     : exactly 4 options like ["A. ...", "B. ...", "C. ...", "D. ..."]
-  "answer"      : the correct letter only, e.g. "B"
-  "explanation" : one sentence from the notes explaining why that answer is correct
-  "source"      : always "notes"
+Return ONLY a valid JSON array.
 
-Example:
-[
-  {{
-    "topic": "Machine Learning",
-    "question": "What does gradient descent minimize?",
-    "options": ["A. Accuracy", "B. Loss function", "C. Learning rate", "D. Epochs"],
-    "answer": "B",
-    "explanation": "Gradient descent minimizes the loss function by iteratively updating weights.",
-    "source": "notes"
-  }}
-]"""
+Each object must contain:
+- "topic"
+- "question"
+- "options" (4 options)
+- "answer"
+- "explanation"
+- "source": "notes"
+"""
 
     raw = call_groq(prompt)
     questions = parse_json(raw)
@@ -84,37 +82,25 @@ Example:
     for q in questions:
         q["source"] = "notes"
 
-    print(f"✅ Generated {len(questions)} quiz questions from notes")
+    print(f"Generated {len(questions)} quiz questions from notes")
     return questions
 
 
+# Quiz from general knowledge
+
 def generate_quiz_from_general(topic: str) -> list:
-    """Generates MCQ questions from general AI knowledge."""
-    prompt = f"""You are a quiz generator for exam preparation.
+    prompt = f"""Generate 5 MCQ questions about "{topic}" using general knowledge.
 
-Generate 5 multiple-choice questions about "{topic}" using your general knowledge.
-This topic was NOT found in the student's uploaded notes.
+Return ONLY JSON array.
 
-Return ONLY a valid JSON array. No explanation, no markdown fences.
-Each object must have:
-  "topic"       : "{topic}"
-  "question"    : the question text
-  "options"     : exactly 4 options like ["A. ...", "B. ...", "C. ...", "D. ..."]
-  "answer"      : the correct letter only, e.g. "B"
-  "explanation" : one sentence explaining why that answer is correct
-  "source"      : always "external"
-
-Example:
-[
-  {{
-    "topic": "{topic}",
-    "question": "What is ...?",
-    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-    "answer": "A",
-    "explanation": "Because ...",
-    "source": "external"
-  }}
-]"""
+Each object must contain:
+- topic
+- question
+- options
+- answer
+- explanation
+- source: "external"
+"""
 
     raw = call_groq(prompt)
     questions = parse_json(raw)
@@ -122,35 +108,26 @@ Example:
     for q in questions:
         q["source"] = "external"
 
-    print(f"✅ Generated {len(questions)} quiz questions from general knowledge")
+    print(f"Generated {len(questions)} external questions")
     return questions
 
 
+# MAIN FUNCTION
+
 def generate_quiz(topic: str, use_full_notes: bool = True, confirmed_external: bool = False) -> dict:
-    """
-    Main entry point for quiz generation.
 
-    Returns:
-    {
-      "status": "ok" | "not_found" | "no_notes",
-      "quiz": [...],
-      "topic": topic,
-      "message": "..."
-    }
-    """
-
-    # Check if anything is uploaded
+    # No notes case
     if get_notes_count() == 0:
         return {
             "status": "no_notes",
             "quiz": [],
             "topic": topic,
-            "message": "No notes uploaded yet. Please upload a file first."
+            "message": "No notes uploaded yet."
         }
 
-    # ════════════════════════════════════════
-    # ALL TOPICS MODE
-    # ════════════════════════════════════════
+   
+    # ALL NOTES MODE
+  
     if use_full_notes:
         notes_text = trim_text(get_all_notes_text())
 
@@ -159,55 +136,53 @@ def generate_quiz(topic: str, use_full_notes: bool = True, confirmed_external: b
                 "status": "no_notes",
                 "quiz": [],
                 "topic": topic,
-                "message": "Notes appear empty. Try uploading your file again."
+                "message": "Notes are empty."
             }
 
-        print(f"📄 Generating quiz from ALL notes ({len(notes_text)} chars)")
+        print("Generating quiz from ALL notes")
         questions = generate_quiz_from_notes(notes_text, "All Topics")
 
         return {
             "status": "ok",
             "quiz": questions,
-            "topic": "All Topics from Notes",
-            "message": f"Generated {len(questions)} questions from your uploaded notes."
+            "topic": "All Topics",
+            "message": "Generated from all uploaded notes."
         }
 
-    # ════════════════════════════════════════
-    # SPECIFIC TOPIC MODE
-    # ════════════════════════════════════════
+   
+    # TOPIC MODE
+   
 
+    # If user already confirmed external
     if confirmed_external:
-        print(f"🌐 User confirmed — generating '{topic}' quiz from general knowledge")
-        questions = generate_quiz_from_general(topic)
         return {
             "status": "ok",
-            "quiz": questions,
+            "quiz": generate_quiz_from_general(topic),
             "topic": topic,
-            "message": "Generated from general knowledge (not in your notes)."
+            "message": "Generated from general knowledge."
         }
 
-    # Semantic search in notes
-    print(f"🔍 Searching notes for: '{topic}'")
-    relevant_chunks = retrieve_relevant_chunks(topic, top_k=4)
-    useful_chunks = [c for c in relevant_chunks if len(c.strip()) > 80]
-    print(f"📊 Found {len(relevant_chunks)} chunks, {len(useful_chunks)} useful")
+    # Semantic retrieval (FIXED)
+    print(f"Searching notes for: {topic}")
+    retrieved_text = retrieve_relevant_chunks(topic, k=4)
 
-    if useful_chunks:
-        notes_content = trim_text("\n\n".join(useful_chunks))
-        print(f"✅ Topic found in notes — generating quiz from notes")
-        questions = generate_quiz_from_notes(notes_content, topic)
+    if retrieved_text.strip():
+        print("Found relevant content in notes")
+
+        questions = generate_quiz_from_notes(retrieved_text, topic)
 
         return {
             "status": "ok",
             "quiz": questions,
             "topic": topic,
-            "message": "Generated from your uploaded notes."
+            "message": "Generated from your notes."
         }
-    else:
-        print(f"❌ Topic '{topic}' not found in notes")
-        return {
-            "status": "not_found",
-            "quiz": [],
-            "topic": topic,
-            "message": f"The topic '{topic}' was not found in your uploaded notes."
-        }
+
+    # Not found case
+    print("Topic not found in notes")
+    return {
+        "status": "not_found",
+        "quiz": [],
+        "topic": topic,
+        "message": f"Topic '{topic}' not found in notes."
+    }

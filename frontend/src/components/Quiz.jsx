@@ -1,5 +1,3 @@
-// Quiz.jsx — Full flow with "not found in notes" confirmation dialog
-
 import { useState, useEffect } from "react";
 import { getQuiz, getNotesStatus } from "../api";
 
@@ -77,7 +75,7 @@ export default function Quiz() {
       {/* Notes status */}
       <div style={{ padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", background: notesStatus?.has_notes ? "#f0fff4" : "#fff5f5", border: `1.5px solid ${notesStatus?.has_notes ? "#27ae60" : "#e74c3c"}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
         <span style={{ color: notesStatus?.has_notes ? "#1a5c30" : "#7b1a1a", fontWeight: "600", fontSize: "14px" }}>
-          {notesStatus?.has_notes ? `✅ Notes ready — ${notesStatus.chunks} chunks in memory` : "⚠️ No notes uploaded — go to 'Upload Notes' tab first"}
+          {notesStatus?.has_notes ? `Notes ready — ${notesStatus.chunks} chunks in memory` : "⚠️ No notes uploaded — go to 'Upload Notes' tab first"}
         </span>
         <button onClick={checkNotes} style={{ background: "none", border: "1px solid #ccc", borderRadius: "6px", padding: "4px 12px", cursor: "pointer", fontSize: "12px" }}>🔄 Refresh</button>
       </div>
@@ -101,10 +99,10 @@ export default function Quiz() {
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button onClick={() => handleGenerate(true)} className="btn-primary" style={{ background: "#e67e22" }}>
-              ✅ Yes, generate from general knowledge
+              Yes, generate from general knowledge
             </button>
             <button onClick={() => { setShowConfirm(false); setTopic(""); }} style={{ padding: "12px 24px", border: "1.5px solid #ccc", borderRadius: "8px", cursor: "pointer", background: "white", fontSize: "15px" }}>
-              ❌ No, I'll search a different topic
+               No, I'll search a different topic
             </button>
           </div>
         </div>
@@ -202,7 +200,7 @@ export default function Quiz() {
                 </div>
               </div>
               <button className="btn-primary" style={{ width: "100%", marginTop: "16px" }} onClick={() => { setQuestions([]); setSelected({}); setSubmitted(false); }}>
-                🔄 Try Again / New Quiz
+                🔄Try Again / New Quiz
               </button>
             </div>
           )}

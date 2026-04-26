@@ -1,5 +1,3 @@
-// Flashcards.jsx — Full flow with "not found in notes" confirmation dialog
-
 import { useState, useEffect } from "react";
 import { getFlashcards, getNotesStatus } from "../api";
 
